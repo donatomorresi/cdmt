@@ -22,3 +22,5 @@ Imports:
     terra
 Depends: 
     R (>= 3.5.0)
+URL: https://github.com/donato-morresi/cdmt
+BugReports: https://github.com/donato-morresi/cdmt/issues
