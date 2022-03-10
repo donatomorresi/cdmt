@@ -1,0 +1,24 @@
+Package: cdmt
+Type: Package
+Title: Change Detection by Multispectral Trends
+Version: 1.0.0
+Authors@R: c(
+    person("Donato", "Morresi", email = "donato.morresi@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-3545-872X")),
+    person("Hyeyoung", "Maeng", email = "h.maeng4@lancaster.ac.uk", role = "aut"),
+    person("Matteo", "Garbarino", email = "matteo.garbarino@unito.it", role = c("ctb", "fnd"), comment = c(ORCID = "0000-0002-9010-1731"))
+    )
+Description: Detects changes in linear trends of inter-annual satellite time series (e.g. Landsat time series) using the High-dimensional Trend Segmentation (HiTS) procedure proposed by Maeng (2019).
+    Satellite time series can be either univariate or multivariate (i.e. including multiple spectral bands and indices).        
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+LazyData: true
+Imports: 
+    accelerometry,
+    matrixStats,
+    rQCC,
+    stats,
+    terra
+Depends: 
+    R (>= 3.5.0)
