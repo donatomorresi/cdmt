@@ -45,7 +45,7 @@ wr2 <- function(x) {
 }
 
 ##################################################################
-### Estimate standard deviation using MAD
+### Estimate standard deviation using MAD corrected for finite-sample bias as proposed by Park et al. (2022) <doi:10.1080/03610918.2019.1699114>
 sd_est <- function(x) {
 
   n <- dim(x)[2] - 2L

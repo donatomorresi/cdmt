@@ -18,11 +18,11 @@ cdmt(
 )
 }
 \arguments{
-\item{sr_data}{character. Yearly surface reflectance data. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{*.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only spectral indices are used.}
+\item{sr_data}{character. Yearly surface reflectance data. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only spectral indices are used.}
 
-\item{si_data}{character. Yearly spectral indices. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{*.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only reflectance bands are used.}
+\item{si_data}{character. Yearly spectral indices. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only reflectance bands are used.}
 
-\item{out_path}{character. The path where output rasters (in \emph{*.tif} format) are saved. Folders are created recursively if they do not exist. If \code{NULL} the output is a \code{SpatRaster} object created by the \pkg{terra} package.}
+\item{out_path}{character. The path where output rasters (in \emph{.tif} format) are saved. Folders are created recursively if they do not exist. If \code{NULL} the output is a \code{SpatRaster} object created by the \pkg{terra} package.}
 
 \item{sr}{numeric vector. Indices (positive integers) of the reflectance bands in each multiband raster to be included in the time series. If \code{NULL} all layers are used. Ignored if \code{sr_data} is a SpatRaster object.}
 
@@ -34,12 +34,12 @@ cdmt(
 
 \item{th_const}{numeric. Constant controlling the change threshold employed by the HiTS procedure during thresholding. Typical values are comprised in the interval \eqn{[1, 1.4]}.}
 
-\item{noise_rm}{logical. If \code{TRUE} the impulsive noise filter is active.}
+\item{noise_rm}{logical. If \code{TRUE} the impulsive noise filter is employed.}
 
 \item{cores}{positive integer. Number of CPU cores used during analysis.}
 }
 \value{
-A \code{SpatRaster} object containing the following layers.
+A \code{SpatRaster} containing the following layers.
 \item{EST}{Estimated values (one layer for each year and band).}
 \item{CPT}{Detected changepoints (one layer for each year and band).}
 \item{SLO}{Slope of the linear segments (one layer for each year and band).}
@@ -69,17 +69,44 @@ A \code{SpatRaster} object containing the following layers.
 \item{N_GAP}{Number of gaps in the time series, if any (single layer).}
 \item{N_TPA}{Number of years containing impulsive noise, if any (single layer).}
 \item{N_ITER}{Number of iterations performed by the impulsive noise filter (single layer).}
-If a valid \code{out_path} is provided, a series of rasters in \emph{*.tif} format containing either one or multiple layers are directly written in the output folder.
+If a valid \code{out_path} is provided, output rasters in \emph{*.tif} format are directly written in the output folder.
 }
 \description{
-This is the main function of the package.
+This is the main function of the \pkg{cdmt} package.
 }
 \details{
-\code{cdmt()} detects changes in linear trends of inter-annual Landsat time series at the pixel level.
-Time series can be either univariate or multivariate, \emph{i.e.} include multiple spectral bands/indices.
-Changes in the intercept, slope or both of linear trends are detected using the High-dimensional Trend Segmentation (HiTS) procedure proposed by Maeng (2019).
-The HiTS procedure aims at detecting changepoints in a piecewise linear signal where the number and location of changepoints are unknown.
-Input and output raster data is handled using the \pkg{terra} package.
+\code{cdmt} analyses inter-annual Landsat time series to detect changes in spectral trends at the pixel level.
+Time series can be either univariate or multivariate, i.e. include multiple spectral bands/indices.
+Impulsive noise, i.e. outliers in the time series, are removed through an iterative procedure.
+One-year gaps in the time series are filled using either linear interpolation or extrapolation.
+Input data are \code{SpatRaster} objects created by the \pkg{terra} package, which contain reflectance and/or spectral indices.
+Changes in the intercept, slope or both of linear trends are detected using the High-dimensional Trend Segmentation (HiTS) procedure proposed by \insertCite{maeng2019adaptive;textual}{cdmt}.
+The HiTS procedure aims at detecting changepoints in a piecewise linear signal where their number and location are unknown.
+}
+\examples{
+# Load raster data
+data(lnd_sr)
+data(lnd_si)
+lnd_sr <- terra::rast(lnd_sr)
+lnd_si <- terra::rast(lnd_si)
+
+# Process data
+rsout <- cdmt(sr_data = "lnd_sr",
+              si_data = "lnd_si",
+              years = 1985:2020,
+              cng_dir = c(-1, -1, 1, 1),
+              cores = 2
+              )
+
+# Plot the median spectral change magnitude across bands (D_MAX_MD)
+terra::plot(rsout[["D_MAX_MD"]])
+
+}
+\references{
+\insertRef{maeng2019adaptive}{cdmt}
+}
+\seealso{
+\code{\link{cdmt_int}}
 }
 \author{
 Donato Morresi, \email{donato.morresi@gmail.com}

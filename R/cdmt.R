@@ -1,25 +1,27 @@
 #' Change Detection by Multispectral Trends
 #'
-#' This is the main function of the package.
+#' This is the main function of the \pkg{cdmt} package.
 #'
-#' \code{cdmt()} detects changes in linear trends of inter-annual Landsat time series at the pixel level.
-#' Time series can be either univariate or multivariate, \emph{i.e.} include multiple spectral bands/indices.
-#' Changes in the intercept, slope or both of linear trends are detected using the High-dimensional Trend Segmentation (HiTS) procedure proposed by Maeng (2019).
-#' The HiTS procedure aims at detecting changepoints in a piecewise linear signal where the number and location of changepoints are unknown.
-#' Input and output raster data is handled using the \pkg{terra} package.
+#' \code{cdmt} analyses inter-annual Landsat time series to detect changes in spectral trends at the pixel level.
+#' Time series can be either univariate or multivariate, i.e. include multiple spectral bands/indices.
+#' Impulsive noise, i.e. outliers in the time series, are removed through an iterative procedure.
+#' One-year gaps in the time series are filled using either linear interpolation or extrapolation.
+#' Input data are \code{SpatRaster} objects created by the \pkg{terra} package, which contain reflectance and/or spectral indices.
+#' Changes in the intercept, slope or both of linear trends are detected using the High-dimensional Trend Segmentation (HiTS) procedure proposed by \insertCite{maeng2019adaptive;textual}{cdmt}.
+#' The HiTS procedure aims at detecting changepoints in a piecewise linear signal where their number and location are unknown.
 #'
-#' @param sr_data character. Yearly surface reflectance data. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{*.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only spectral indices are used.
-#' @param si_data character. Yearly spectral indices. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{*.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only reflectance bands are used.
-#' @param out_path character. The path where output rasters (in \emph{*.tif} format) are saved. Folders are created recursively if they do not exist. If \code{NULL} the output is a \code{SpatRaster} object created by the \pkg{terra} package.
+#' @param sr_data character. Yearly surface reflectance data. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only spectral indices are used.
+#' @param si_data character. Yearly spectral indices. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only reflectance bands are used.
+#' @param out_path character. The path where output rasters (in \emph{.tif} format) are saved. Folders are created recursively if they do not exist. If \code{NULL} the output is a \code{SpatRaster} object created by the \pkg{terra} package.
 #' @param sr numeric vector. Indices (positive integers) of the reflectance bands in each multiband raster to be included in the time series. If \code{NULL} all layers are used. Ignored if \code{sr_data} is a SpatRaster object.
 #' @param si numeric vector. Indices (positive integers) of the spectral indices in each multiband raster to be included in the time series. If \code{NULL} all layers are used.
 #' @param years numeric vector. Time interval (years) to be analysed.
 #' @param cng_dir numeric vector. Direction of change caused by a disturbance in each spectral band/index. Valid values are either 1 or -1.
 #' @param th_const numeric. Constant controlling the change threshold employed by the HiTS procedure during thresholding. Typical values are comprised in the interval \eqn{[1, 1.4]}.
-#' @param noise_rm logical. If \code{TRUE} the impulsive noise filter is active.
+#' @param noise_rm logical. If \code{TRUE} the impulsive noise filter is employed.
 #' @param cores positive integer. Number of CPU cores used during analysis.
 #'
-#' @return A \code{SpatRaster} object containing the following layers.
+#' @return A \code{SpatRaster} containing the following layers.
 #'   \item{EST}{Estimated values (one layer for each year and band).}
 #'   \item{CPT}{Detected changepoints (one layer for each year and band).}
 #'   \item{SLO}{Slope of the linear segments (one layer for each year and band).}
@@ -49,14 +51,39 @@
 #'   \item{N_GAP}{Number of gaps in the time series, if any (single layer).}
 #'   \item{N_TPA}{Number of years containing impulsive noise, if any (single layer).}
 #'   \item{N_ITER}{Number of iterations performed by the impulsive noise filter (single layer).}
-#' If a valid \code{out_path} is provided, a series of rasters in \emph{*.tif} format containing either one or multiple layers are directly written in the output folder.
+#' If a valid \code{out_path} is provided, output rasters in \emph{*.tif} format are directly written in the output folder.
 #'
 #' @author Donato Morresi, \email{donato.morresi@@gmail.com}
+#'
+#' @seealso \code{\link{cdmt_int}}
+#'
+#' @references
+#' \insertRef{maeng2019adaptive}{cdmt}
+#'
+#' @examples
+#' # Load raster data
+#' data(lnd_sr)
+#' data(lnd_si)
+#' lnd_sr <- terra::rast(lnd_sr)
+#' lnd_si <- terra::rast(lnd_si)
+#'
+#' # Process data
+#' rsout <- cdmt(sr_data = "lnd_sr",
+#'               si_data = "lnd_si",
+#'               years = 1985:2020,
+#'               cng_dir = c(-1, -1, 1, 1),
+#'               cores = 2
+#'               )
+#'
+#' # Plot the median spectral change magnitude across bands (D_MAX_MD)
+#' terra::plot(rsout[["D_MAX_MD"]])
 #'
 #' @export
 #' @import matrixStats
 #' @import parallel
 #' @importFrom accelerometry rle2
+#' @importFrom lubridate seconds_to_period
+#' @importFrom Rdpack reprompt
 #' @importFrom stats .lm.fit
 #' @importFrom stats median
 #' @importFrom terra app
@@ -71,32 +98,46 @@ cdmt <- function(sr_data, si_data, out_path = NULL, sr = NULL, si = NULL, years,
   message("\nLoading raster data ...")
 
   if (is.null(sr_data) && is.null(si_data)) {
-    stop('\nExecution halted: missing raster data')
+    stop("missing input data")
   }
 
   if (!is.null(sr_data)) {
 
-    if (exists(sr_data, .GlobalEnv)) {
+    if (exists(sr_data, envir = .GlobalEnv)) {  #&& inherits(sr_data, "SpatRaster")
       sr_rs <- get(sr_data, envir = .GlobalEnv)
+
+      if (!inherits(sr_rs, "SpatRaster")) {
+        stop("unrecognised reflectance data")
+      }
     }
-    else {
+    else if (inherits(sr_data, "connection")) {
       pat <- paste0("(", paste0("_", years, collapse = "|"), ")+.+tif$")
       f <- list.files(sr_data, pat, full.names = TRUE)
       sr_rs <- lapply(f, function(x) rast(x, lyrs = sr))
       sr_rs <- do.call(c, sr_rs)
     }
+    else {
+      stop("unrecognised reflectance data")
+    }
   }
 
   if (!is.null(si_data)) {
 
-    if (exists(si_data, .GlobalEnv)) {
+    if (exists(si_data, envir = .GlobalEnv)) {
       si_rs <- get(si_data, envir = .GlobalEnv)
+
+      if (!inherits(si_rs, "SpatRaster")) {
+        stop("unrecognised spectral indices data")
+      }
     }
-    else {
+    else if (inherits(si_data, "connection")) {
       pat <- paste0("(", paste0("_", years, collapse = "|"), ")+.+tif$")
       f <- list.files(si_data, pat, full.names = TRUE)
       si_rs <- lapply(f, function(x) rast(x, lyrs = si))
       si_rs <- do.call(c, si_rs)
+    }
+    else {
+      stop("unrecognised spectral indices data")
     }
   }
 
@@ -130,11 +171,11 @@ cdmt <- function(sr_data, si_data, out_path = NULL, sr = NULL, si = NULL, years,
   nb <- nlyr(rs) / ny
 
   if (nb %% 1 != 0) {
-    stop("Execution halted: unequal number of raster layers")
+    stop("unequal number of raster layers")
   }
 
   if (length(cng_dir) != nb) {
-    stop("Execution halted: the length of cng_dir does not match the number of bands")
+    stop("length of cng_dir does not match the number of bands")
   }
 
   # Compute number of output layers
@@ -182,30 +223,44 @@ cdmt <- function(sr_data, si_data, out_path = NULL, sr = NULL, si = NULL, years,
     toc <- proc.time()
   }
 
-  elapsed <- round((toc - tic)[3]/3600, 2)
+  elapsed <- seconds_to_period((toc - tic)[3])
 
   # Compute indices and set layer names
   ni <- seq_len(length(rep(seq_len(nb), ny)) * length(matn))
   mi <- matrix(ni, ncol = nb, byrow = TRUE)
-  mn <- paste0("CDMT_", years, "_", rep(matn, each=ny))
+  mn <- paste0(rep(matn, each=ny), "_", years)
 
-  v1i <- (ni[length(ni)]+1):(ni[length(ni)] + ny * length(ve1n))
+  v1i <- (ni[length(ni)] + 1):(ni[length(ni)] + ny * length(ve1n))
   v1im <- matrix(v1i, ncol = ny, byrow = TRUE)
-  v1n <- c(paste0("CDMT_", ve1n, "_", years[1], "_", years[ny]))
+  v1n <- c(paste0(ve1n, "_", years[1], "_", years[ny]))
 
   v2i <- (v1i[length(v1i)] + 1):(v1i[length(v1i)] + nb * length(ve2n))
   v2im <- matrix(v2i, ncol = nb, byrow = TRUE)
-  v2n <- c(paste0("CDMT_", ve2n, "_", years[1], "_", years[ny]))
+  v2n <- c(paste0(ve2n, "_", years[1], "_", years[ny]))
 
   si <- (v2i[length(v2i)] + 1):(v2i[length(v2i)] + length(valn))
-  sn <- paste0("CDMT_", valn)
+  sim <- matrix(si, ncol = 1)
+  sn <- paste0(valn)
+
+  out_ind <- list(mi, v1im, v2im, sim)
+  out_nm <- list(mn, v1n, v2n, sn)
 
   names(rsout) <- c(paste0(rep(mn, each=nb), "_", seq(nb)),
                     paste0(rep(v1n, each=ny), "_", seq(ny)),
                     paste0(rep(v2n, each=nb), "_", seq(nb)),
                     sn)
 
-  if (!is.null(out_path)) {
+  if (is.null(out_path)) {
+
+    message("\nExecution took ", elapsed)
+    tmpFiles(remove = TRUE)
+    return(rsout)
+  }
+  else {
+
+    if (!inherits(out_path, "connection")) {
+      stop("invalid out_path")
+    }
 
     if (!dir.exists(out_path)) {
       dir.create(out_path, recursive = TRUE)
@@ -213,39 +268,18 @@ cdmt <- function(sr_data, si_data, out_path = NULL, sr = NULL, si = NULL, years,
 
     message("\nWrite output rasters to disk ...")
 
-    # Write data stored as matrices
-    lapply(seq_along(mn), function(i) {
-      rs <- rsout[[mi[i,]]]
-      writeRaster(rs, file.path(paste0(out_path, "/", mn[i], ".tif")), overwrite = TRUE,
-                  wopt = list(filetype = "GTiff", datatype = "FLT4S", NAflag = -32768, gdal = c("COMPRESS=LZW")))
-    })
+    for (i in seq_along(out_ind)) {
 
-    # Write data stored as long vectors
-    lapply(seq_along(v1n), function(i) {
-      rs <- rsout[[v1im[i,]]]
-      writeRaster(rs, file.path(paste0(out_path, "/", v1n[i], ".tif")), overwrite = TRUE,
-                  wopt = list(filetype = "GTiff", datatype = "FLT4S", NAflag = -32768, gdal = c("COMPRESS=LZW")))
-    })
+      ind <- out_ind[[i]]
+      nm <- out_nm[[i]]
 
-    # Write data stored as short vectors
-    lapply(seq_along(v2n), function(i) {
-      rs <- rsout[[v2im[i,]]]
-      writeRaster(rs, file.path(paste0(out_path, "/", v2n[i], ".tif")), overwrite = TRUE,
-                  wopt = list(filetype = "GTiff", datatype = "FLT4S", NAflag = -32768, gdal = c("COMPRESS=LZW")))
-    })
-
-    # Write data stored as single values
-    lapply(seq_along(sn), function(i) {
-      rs <- rsout[[si[i]]]
-      writeRaster(rs, file.path(paste0(out_path, "/", sn[i], ".tif")), overwrite = TRUE,
-                  wopt = list(filetype = "GTiff", datatype = "FLT4S", NAflag = -32768, gdal = c("COMPRESS=LZW")))
-    })
+      for (j in seq_along(nm)) {
+        rs <- rsout[[ind[j,]]]
+        writeRaster(rs, file.path(paste0(out_path, "/", nm[j], ".tif")), overwrite = TRUE,
+                    wopt = list(filetype = "GTiff", datatype = "FLT4S", NAflag = -32768, gdal = c("COMPRESS=LZW")))
+      }
+    }
+    message("\nExecution took ", elapsed)
+    tmpFiles(remove = TRUE)
   }
-  else {
-    return(rsout)
-  }
-
-  message("\nExecution took ", elapsed, " hours")
-
-  tmpFiles(remove = TRUE)
 }

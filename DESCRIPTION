@@ -16,11 +16,13 @@ RoxygenNote: 7.1.2
 LazyData: true
 Imports: 
     accelerometry,
+    lubridate,
     matrixStats,
-    rQCC,
+    Rdpack,
     stats,
     terra
 Depends: 
     R (>= 3.5.0)
+RdMacros: Rdpack  
 URL: https://github.com/donato-morresi/cdmt
 BugReports: https://github.com/donato-morresi/cdmt/issues
