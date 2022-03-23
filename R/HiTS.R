@@ -1,5 +1,5 @@
 ########################################################
-### decomposition
+### 1) decomposition
 hd.bts.dcmp <- function(x, p = .01, w) {
 
   d <- dim(x)[1]
@@ -260,7 +260,7 @@ hd.bts.dcmp <- function(x, p = .01, w) {
 }
 
 #########################################################
-### Thresholding
+### 2) thresholding
 hd.bts.dns <- function(bts.obj, lambda, bal = 0, w, agg) {
 
   if(dim(bts.obj$decomp.hist)[1]>4){
@@ -319,7 +319,7 @@ hd.bts.dns <- function(bts.obj, lambda, bal = 0, w, agg) {
 }
 
 #########################################################
-### inverse transformation
+### 3) inverse transformation
 hd.bts.inv <- function(bts.obj) {
 
   n <- bts.obj$n
@@ -354,7 +354,7 @@ hd.bts.inv <- function(bts.obj) {
 }
 
 #########################################################
-### post processing - stage 1
+### 4) post processing - stage 1
 hd.bts.pp1 <- function(bts.obj, lambda, w) {
 
   wc <- rep(1L, bts.obj$n)
@@ -600,7 +600,7 @@ hd.bts.pp1 <- function(bts.obj, lambda, w) {
 }
 
 #########################################################
-### all four steps (from post processing)
+### all four steps
 hd.bts.cpt <- function(x, sd, th.const, weight, p = .01, bal = 0) {
 
   m <- dim(x)[1]
@@ -653,7 +653,6 @@ hd.bts.cpt <- function(x, sd, th.const, weight, p = .01, bal = 0) {
 
   cpt <- pp1$chp
 
-  ##cptind <- ifelse(pp1$details > lambda, 1, 0)
   cptind <- matrix(0L, dim(pp1$details)[1], dim(pp1$details)[2])
   cptind[pp1$details > lambda] <- 1L
 

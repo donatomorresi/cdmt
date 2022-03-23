@@ -1,25 +1,25 @@
 #' Pixel-wise Change Detection by Multispectral Trends
 #'
-#' This is the internal function called by \code{\link{cdmt}}.
+#' This is the internal function called by \code{\link{cdmt}} to operate at the pixel level.
 #'
-#' \code{cdmt_int} is not directly called by the user.
+#' \code{cdmt_int()} is not directly called by the user.
 #' It analyses inter-annual Landsat time series to detect changes in spectral trends at the pixel level.
-#' Time series can be either univariate or multivariate, i.e. include multiple spectral bands/indices.
-#' Input data can be a \code{numeric} \code{vector} extracted from a \code{SpatRaster} object or a \code{matrix}.
-#' Impulsive noise, i.e. outliers in the time series, are removed through an iterative procedure.
+#' Time series can include single or multiple spectral bands/indices, hereafter referred to as bands.
+#' Input data can be a \code{numeric} \code{vector} extracted from a \code{SpatRaster} or a \code{matrix}.
+#' Impulsive noise, i.e. outliers in the time series, can be removed through an iterative procedure by the relevant filter.
 #' One-year gaps in the time series are filled using either linear interpolation or extrapolation.
 #' Changes in the intercept, slope or both of linear trends are detected using the High-dimensional Trend Segmentation (HiTS) procedure proposed by \insertCite{maeng2019adaptive;textual}{cdmt}.
 #' The HiTS procedure aims at detecting changepoints in a piecewise linear signal where their number and location are unknown.
 #'
-#' @param x matrix. Each row contains time-ordered data relative to an individual reflectance band or spectral index. Each column contains data relative to a single year.
-#' @param nb integer. The number of reflectance bands and/or spectral indices, i.e. rows of \code{x}.
-#' @param ny integer. The number of years, i.e. columns of \code{x}.
+#' @param x numeric vector or matrix. If \code{x} is a numeric vector, it should contain sequences of yearly values for each band. If \code{x} is a matrix, each row should contain time-ordered data relative to an individual band.
+#' @param nb integer. The number of bands in the time series.
+#' @param ny integer. The number of years.
 #' @param yrs numeric vector. The sequence of years to be analysed.
 #' @param ev logical vector. A vector containing \code{NA} values to be used in case of processing failure.
-#' @param dir numeric vector. Direction of change caused by a disturbance in each spectral band/index. Valid values are either 1 or -1.
+#' @param dir numeric vector. Direction of change caused by a disturbance in each band. Valid values are either 1 or -1.
 #' @param th_const numeric. Constant controlling the change threshold employed by the HiTS procedure during thresholding. Typical values are comprised in the interval \eqn{[1, 1.4]}.
 #' @param noise_rm logical. If \code{TRUE} the impulsive noise filter is used.
-#' @param as_list logical. If If \code{TRUE} the output is a \code{list}. Otherwise, the output is a \code{numeric} \code{vector}.
+#' @param as_list logical. If \code{TRUE} the output is a \code{list}. Otherwise, the output is a \code{numeric} \code{vector}.
 #'
 #' @return If \code{as_list} is \code{TRUE}, a \code{list} containing the following elements.
 #'   \item{est}{Estimated values (one layer for each year and band).}
@@ -76,16 +76,16 @@
 #'                 )
 #'
 #' # Plot results
-#' var <- c("MSI", "TCW", "TCA")
-#' par(mfrow=c(length(var), 1))
+#' bands <- c("MSI", "TCW", "TCA")
+#' par(mfrow=c(length(bands), 1))
 #'
-#' for(i in seq_along(var)) {
+#' for(i in seq_along(bands)) {
 #'   plot(matrix(v, nrow = 3, ncol = 36)[i,], type = "l", col = 2,
 #'   lwd = 2, ylab = "", xlab = "", xaxt = "n")
 #'   lines(out$est[i,], type = "l", col = 4, lwd = 2, lty = 1)
 #'   abline(v = which(out$cpt_id == 101), lty = 2, col = 1, lwd = 2)
 #'   axis(1, at = seq_along(1985:2020), labels = 1985:2020)
-#'   title(main = paste(var[i]), adj = 0)
+#'   title(main = paste(bands[i]), adj = 0)
 #' }
 #'
 #' @export
@@ -104,14 +104,14 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
 
   if (ncc < ny) {
 
-    gl <- rle2(cc, class='logical')
-    gl <- gl[gl[,1]==0L, 2]
+    gl <- rle2(cc, class = 'logical')
+    gl <- gl[gl[, 1] == 0L, 2]
 
     if (any(gl > 1L)) {
       return(ev)
     }
     else {
-      x <- x[, cc, drop=F]
+      x <- x[, cc, drop = FALSE]
     }
   }
 
@@ -137,14 +137,14 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
       if (any(tpav != 0L)) {
 
         # estimate standard deviation without tpas
-        sd <- sd_est(x[, tpav == 0L, drop=F])
+        sd <- sd_est(x[, tpav == 0L, drop = FALSE])
 
         if (any(sd == 0L)) {
           return(ev)
         }
 
         # compute weights
-        w <- wr2(x[, tpav == 0L, drop=F])
+        w <- wr2(x[, tpav == 0L, drop = FALSE])
       }
 
       # perform hits
@@ -171,7 +171,7 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
           for (i in seq_along(tpa)) {
 
             tpai <- tpa[i]
-            x[,tpai] <- colMeans2(rbind(x[,tpai - 1L], x[,tpai + 1L]))
+            x[, tpai] <- colMeans2(rbind(x[, tpai - 1L], x[, tpai + 1L]))
           }
         }
       }
@@ -184,7 +184,7 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
 
   if (ncc < ny) {
 
-    ec <- which(cc==F)
+    ec <- which(cc == FALSE)
 
     # update cpts if there were data gaps
     if (y$no.of.cpt > 0L) {
@@ -211,11 +211,11 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
 
         if (any(y$cpt != 0L) && any(y$cpt == eci + 1L || y$cpt == eci + 2L)) {
           # use the following value
-          x[,eci] <- y$est[,eci] <- y$est[,eci + 1L]
+          x[, eci] <- y$est[, eci] <- y$est[, eci + 1L]
         }
         else {
           # use extrapolated values
-          x[,eci] <- y$est[,eci] <- y$est[,eci + 2L] + 2*(y$est[,eci + 1L] - y$est[,eci + 2L])
+          x[, eci] <- y$est[, eci] <- y$est[, eci + 2L] + 2 * (y$est[, eci + 1L] - y$est[, eci + 2L])
         }
       }
       # or at the end
@@ -227,18 +227,18 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
 
         if (any(y$cpt != 0L) && any(y$cpt == eci - 1L || y$cpt == eci - 2L)) {
           # use the preceding value
-          x[,eci] <- y$est[,eci] <- y$est[,eci - 1L]
+          x[, eci] <- y$est[, eci] <- y$est[, eci - 1L]
         }
         else {
           # use extrapolated values
-          x[,eci] <- y$est[,eci] <- y$est[,eci - 2L] + 2*(y$est[,eci - 1L] - y$est[,eci - 2L])
+          x[, eci] <- y$est[, eci] <- y$est[, eci - 2L] + 2 * (y$est[, eci - 1L] - y$est[, eci - 2L])
         }
       }
       else {
         seq1 <- seq_len(eci - 1L)
         seq2 <- eci:dim(x)[2]
-        x <- cbind(x[,seq1,drop=F], rep(NA, nb), x[,seq2,drop=F])
-        y$est <- cbind(y$est[,seq1,drop=F], rep(NA, nb), y$est[,seq2,drop=F])
+        x <- cbind(x[, seq1, drop = FALSE], rep(NA, nb), x[, seq2, drop = FALSE])
+        y$est <- cbind(y$est[, seq1, drop = FALSE], rep(NA, nb), y$est[, seq2,drop = FALSE])
         tpav <- c(tpav[seq1], 0L, tpav[seq2])
 
         if (any(y$cpt != 0L) && any(y$cpt == eci + 1L)) {
@@ -246,17 +246,17 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
           if (eci > 2L) {
 
             # fill gap using values extrapolated from the preceding segment
-            x[,eci] <- y$est[,eci] <- y$est[,eci - 2L] + 2*(y$est[,eci - 1L] - y$est[,eci - 2L])
+            x[, eci] <- y$est[, eci] <- y$est[, eci - 2L] + 2 * (y$est[, eci - 1L] - y$est[, eci - 2L])
           }
           else {
             # use the preceding value
-            x[,eci] <- y$est[,eci] <- y$est[,eci - 1L]
+            x[, eci] <- y$est[, eci] <- y$est[, eci - 1L]
           }
         }
         else {
 
           # perform linear interpolation if there aren't PA or CPT near the gap
-          x[,eci] <- y$est[,eci] <- colMeans2(rbind(y$est[,eci - 1L], y$est[,eci + 1L]))
+          x[, eci] <- y$est[, eci] <- colMeans2(rbind(y$est[, eci - 1L], y$est[, eci + 1L]))
         }
       }
     }
@@ -270,12 +270,10 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
 
   # store cptind per each year in a matrix
   cpts <- matrix(NA, nb, ny)
-  #cpts[,y$cpt] <- y$cptind
+  cpts[, y$cpt] <- y$cptind
 
   # assign the year to the gap occurrence
   tpav <- tpav * yrs
-
-  #strtoi(paste(cpts, collapse=''), base=2)
 
   # compute length of segments
   if (nseg == 1L) {
@@ -304,19 +302,19 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
   slo <- matrix(NA, nb, nseg)
 
   if (nseg == 1L) {
-    slo[,1] <- y$est[,2] - y$est[,1]
+    slo[, 1] <- y$est[, 2] - y$est[, 1]
   }
   else {
     for (i in seq_len(nseg)) {
 
       if (len[i] == 1L) {
-        slo[,i] <- rep(0, nb)
+        slo[, i] <- rep(0, nb)
       }
       else if (i == nseg) {
-        slo[,i] = y$est[,ny] - y$est[,ny-1L]
+        slo[, i] <- y$est[, ny] - y$est[, ny - 1L]
       }
       else {
-        slo[,i] <- y$est[,y$cpt[i]-1L] - y$est[,y$cpt[i]-2L]
+        slo[, i] <- y$est[, y$cpt[i] - 1L] - y$est[, y$cpt[i] - 2L]
       }
     }
   }
@@ -349,11 +347,11 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
         next
       }
 
-      mag1.act <- x[,cpti-1L] - x[,cpti]
-      mag1.est <- y$est[,cpti-1L] - y$est[,cpti]
+      mag1.act <- x[, cpti - 1L] - x[, cpti]
+      mag1.est <- y$est[, cpti - 1L] - y$est[, cpti]
 
-      mag2.act <- x[,cpti-1L] - x[,cpti+1L]
-      mag2.est <- y$est[,cpti-1L] - y$est[,cpti+1L]
+      mag2.act <- x[, cpti - 1L] - x[, cpti + 1L]
+      mag2.est <- y$est[, cpti - 1L] - y$est[, cpti + 1L]
 
       cng.dir.act <- sign(mag1.act)
       cng.dir.est <- sign(mag1.est)
@@ -362,7 +360,7 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
       if (len.seg[cpti] == 1L) {
         cng.type <- 1L  # abrupt change
       }
-      else if (sum(abs(mag1.est) > sd, na.rm=T) > (nb/2) && sum(abs(mag2.est) > sd, na.rm=T) > (nb/2) && sum(sign(mag1.est) == sign(mag2.est)) > (nb/2)) {
+      else if (sum(abs(mag1.est) > sd, na.rm = TRUE) > (nb / 2) && sum(abs(mag2.est) > sd, na.rm = TRUE) > (nb / 2) && sum(sign(mag1.est) == sign(mag2.est)) > (nb / 2)) {
         cng.type <- 1L  # abrupt change
       }
       else {
@@ -371,20 +369,20 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
 
       if (cng.type == 1L) {   # abrupt change
 
-        if (sum(cng.dir.act == dir) > nb/2 && sum(cng.dir.est == dir) > nb/2) {    # pattern of change corresponding to a disturbance
+        if (sum(cng.dir.act == dir) > nb / 2 && sum(cng.dir.est == dir) > nb / 2) {    # pattern of change corresponding to a disturbance
 
           cpt.id[cpti] <- 101L    # abrupt disturbance
           d.dur[cpti] <- 1L
-          mag[,cpti] <- mag1.est
-          mag.rel[,cpti] <- mag1.est/y$est[,cpti-1L] * 100
+          mag[, cpti] <- mag1.est
+          mag.rel[, cpti] <- mag1.est / y$est[, cpti - 1L] * 100
 
         }
-        else if (sum(cng.dir.act == -dir) > nb/2 && sum(cng.dir.est == -dir) > nb/2) {
+        else if (sum(cng.dir.act == -dir) > nb / 2 && sum(cng.dir.est == -dir) > nb / 2) {
 
           cpt.id[cpti] <- 102L    # abrupt greening
           g.dur[cpti] <- len.seg[cpti]
-          mag[,cpti] <- mag1.est
-          mag.rel[,cpti] <- mag1.est/y$est[,cpti-1L] * 100
+          mag[, cpti] <- mag1.est
+          mag.rel[, cpti] <- mag1.est / y$est[, cpti - 1L] * 100
 
         }
         else {
@@ -393,20 +391,20 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
       }
       else {   # gradual change
 
-        slo.dir <- sign(slo.seg[,cpti])
-        mag3.est <- y$est[,cpti] - y$est[,cpti-1L + len.seg[cpti]]
+        slo.dir <- sign(slo.seg[, cpti])
+        mag3.est <- y$est[, cpti] - y$est[, cpti - 1L + len.seg[cpti]]
 
-        if (sum(slo.dir == -dir, na.rm=T) > (nb/2)) {
+        if (sum(slo.dir == -dir, na.rm = TRUE) > (nb / 2)) {
           cpt.id[cpti] <- 201L    # gradual decline
           d.dur[cpti] <- len.seg[cpti]
-          mag[,cpti] <- mag3.est
-          mag.rel[,cpti] <- mag3.est/y$est[,cpti-1L] * 100
+          mag[, cpti] <- mag3.est
+          mag.rel[, cpti] <- mag3.est / y$est[, cpti - 1L] * 100
         }
-        else if (sum(slo.dir == dir, na.rm=T) > (nb/2)) {
+        else if (sum(slo.dir == dir, na.rm = TRUE) > (nb / 2)) {
           cpt.id[cpti] <- 202L    # gradual greening
           g.dur[cpti] <- len.seg[cpti]
-          mag[,cpti] <- mag3.est
-          mag.rel[,cpti] <- mag3.est/y$est[,cpti-1L] * 100
+          mag[, cpti] <- mag3.est
+          mag.rel[, cpti] <- mag3.est / y$est[, cpti - 1L] * 100
         }
         else {
           cpt.id[cpti] <- 9L
@@ -429,7 +427,7 @@ cdmt_int <- function(x, nb, ny, yrs, ev = NA, dir, th_const = 1.2, noise_rm = TR
       ind <- which.max(cpt.id %in% c(101, 201))
       d.fst.yr <- yrs[ind]
       d.fst.mg <- mag.rel[, ind]
-      d.fst.md <- median(d.fst.mg)
+      d.fst.md <- mag.md[ind]
       d.fst.dr <- d.dur[ind]
       d.fst.id <- cpt.id[ind]
     }

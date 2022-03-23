@@ -18,15 +18,15 @@ cdmt(
 )
 }
 \arguments{
-\item{sr_data}{character. Yearly surface reflectance data. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only spectral indices are used.}
+\item{sr_data}{character. Yearly surface reflectance data. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{.tif} format) are stored. Each layer name should include the year preceded by an underscore ( \code{_} ). If \code{NULL} only spectral indices are used.}
 
-\item{si_data}{character. Yearly spectral indices. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{.tif} format) are stored. Each layer name should include the year preceded by an underscore. If \code{NULL} only reflectance bands are used.}
+\item{si_data}{character. Yearly spectral indices. Either the name of a \code{SpatRaster} object in the global environment or the full path where rasters (in \emph{.tif} format) are stored. Each layer name should include the year preceded by an underscore ( \code{_} ). If \code{NULL} only reflectance bands are used.}
 
-\item{out_path}{character. The path where output rasters (in \emph{.tif} format) are saved. Folders are created recursively if they do not exist. If \code{NULL} the output is a \code{SpatRaster} object created by the \pkg{terra} package.}
+\item{out_path}{character. The path where output rasters (in \emph{.tif} format) will be saved. Folders are created recursively if they do not exist. If \code{NULL} the output is a \code{SpatRaster} object created by the \pkg{terra} package.}
 
-\item{sr}{numeric vector. Indices (positive integers) of the reflectance bands in each multiband raster to be included in the time series. If \code{NULL} all layers are used. Ignored if \code{sr_data} is a SpatRaster object.}
+\item{sr}{numeric vector. Layer indices (positive integers) of reflectance bands in each raster to be included in the time series. If \code{NULL} all layers are used. Ignored if \code{sr_data} is a \code{SpatRaster}.}
 
-\item{si}{numeric vector. Indices (positive integers) of the spectral indices in each multiband raster to be included in the time series. If \code{NULL} all layers are used.}
+\item{si}{numeric vector. Layer indices (positive integers) of spectral indices in each raster to be included in the time series. If \code{NULL} all layers are used. Ignored if \code{si_data} is a \code{SpatRaster}.}
 
 \item{years}{numeric vector. Time interval (years) to be analysed.}
 
@@ -50,8 +50,8 @@ A \code{SpatRaster} containing the following layers.
 \item{TPA}{Impulsive noise (one layer per year).}
 \item{D_DUR}{Duration of disturbance (one layer per year).}
 \item{G_DUR}{Duration of greening (one layer per year).}
-\item{D_MAX}{Maximum disturbance change magnitude (in relative tems) throughout the time series (one layer per band).}
-\item{D_FST}{Change magnitude (in relative tems) associated with the first disturbance detected within the time series (one layer per band).}
+\item{D_MAX}{Maximum disturbance change magnitude (in relative terms) throughout the time series (one layer per band).}
+\item{D_FST}{Change magnitude (in relative terms) associated with the first disturbance detected within the time series (one layer per band).}
 \item{G_MAX}{Maximum greening change magnitude (in relative tems) throughout the time series (one layer per band).}
 \item{WGTS}{Weights assigned to each band (one layer per band).}
 \item{D_MAX_MD}{Median among bands using values of \code{D_MAX} (single layer).}
@@ -72,18 +72,20 @@ A \code{SpatRaster} containing the following layers.
 If a valid \code{out_path} is provided, output rasters in \emph{*.tif} format are directly written in the output folder.
 }
 \description{
-This is the main function of the \pkg{cdmt} package.
+This is the main function of the package.
 }
 \details{
-\code{cdmt} analyses inter-annual Landsat time series to detect changes in spectral trends at the pixel level.
-Time series can be either univariate or multivariate, i.e. include multiple spectral bands/indices.
+\code{cdmt()} maps changes in spectral trends at the pixel level by analysing inter-annual Landsat time series.
+Time series can include single or multiple spectral bands/indices, hereafter referred to as bands.
 Impulsive noise, i.e. outliers in the time series, are removed through an iterative procedure.
 One-year gaps in the time series are filled using either linear interpolation or extrapolation.
-Input data are \code{SpatRaster} objects created by the \pkg{terra} package, which contain reflectance and/or spectral indices.
+Input bands are \code{SpatRaster} objects created by the \pkg{terra} package.
 Changes in the intercept, slope or both of linear trends are detected using the High-dimensional Trend Segmentation (HiTS) procedure proposed by \insertCite{maeng2019adaptive;textual}{cdmt}.
 The HiTS procedure aims at detecting changepoints in a piecewise linear signal where their number and location are unknown.
 }
 \examples{
+library(cdmt)
+
 # Load raster data
 data(lnd_sr)
 data(lnd_si)
@@ -98,7 +100,7 @@ rsout <- cdmt(sr_data = "lnd_sr",
               cores = 2
               )
 
-# Plot the median spectral change magnitude across bands (D_MAX_MD)
+# Plot the maximum disturbance magnitude
 terra::plot(rsout[["D_MAX_MD"]])
 
 }

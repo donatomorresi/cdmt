@@ -17,23 +17,23 @@ cdmt_int(
 )
 }
 \arguments{
-\item{x}{matrix. Each row contains time-ordered data relative to an individual reflectance band or spectral index. Each column contains data relative to a single year.}
+\item{x}{numeric vector or matrix. If \code{x} is a numeric vector, it should contain sequences of yearly values for each band. If \code{x} is a matrix, each row should contain time-ordered data relative to an individual band.}
 
-\item{nb}{integer. The number of reflectance bands and/or spectral indices, i.e. rows of \code{x}.}
+\item{nb}{integer. The number of bands in the time series.}
 
-\item{ny}{integer. The number of years, i.e. columns of \code{x}.}
+\item{ny}{integer. The number of years.}
 
 \item{yrs}{numeric vector. The sequence of years to be analysed.}
 
 \item{ev}{logical vector. A vector containing \code{NA} values to be used in case of processing failure.}
 
-\item{dir}{numeric vector. Direction of change caused by a disturbance in each spectral band/index. Valid values are either 1 or -1.}
+\item{dir}{numeric vector. Direction of change caused by a disturbance in each band. Valid values are either 1 or -1.}
 
 \item{th_const}{numeric. Constant controlling the change threshold employed by the HiTS procedure during thresholding. Typical values are comprised in the interval \eqn{[1, 1.4]}.}
 
 \item{noise_rm}{logical. If \code{TRUE} the impulsive noise filter is used.}
 
-\item{as_list}{logical. If If \code{TRUE} the output is a \code{list}. Otherwise, the output is a \code{numeric} \code{vector}.}
+\item{as_list}{logical. If \code{TRUE} the output is a \code{list}. Otherwise, the output is a \code{numeric} \code{vector}.}
 }
 \value{
 If \code{as_list} is \code{TRUE}, a \code{list} containing the following elements.
@@ -69,14 +69,14 @@ If \code{as_list} is \code{TRUE}, a \code{list} containing the following element
 If \code{as_list} is \code{FALSE} the result is a \code{numeric} \code{vector}.
 }
 \description{
-This is the internal function called by \code{\link{cdmt}}.
+This is the internal function called by \code{\link{cdmt}} to operate at the pixel level.
 }
 \details{
-\code{cdmt_int} is not directly called by the user.
+\code{cdmt_int()} is not directly called by the user.
 It analyses inter-annual Landsat time series to detect changes in spectral trends at the pixel level.
-Time series can be either univariate or multivariate, i.e. include multiple spectral bands/indices.
-Input data can be a \code{numeric} \code{vector} extracted from a \code{SpatRaster} object or a \code{matrix}.
-Impulsive noise, i.e. outliers in the time series, are removed through an iterative procedure.
+Time series can include single or multiple spectral bands/indices, hereafter referred to as bands.
+Input data can be a \code{numeric} \code{vector} extracted from a \code{SpatRaster} or a \code{matrix}.
+Impulsive noise, i.e. outliers in the time series, can be removed through an iterative procedure by the relevant filter.
 One-year gaps in the time series are filled using either linear interpolation or extrapolation.
 Changes in the intercept, slope or both of linear trends are detected using the High-dimensional Trend Segmentation (HiTS) procedure proposed by \insertCite{maeng2019adaptive;textual}{cdmt}.
 The HiTS procedure aims at detecting changepoints in a piecewise linear signal where their number and location are unknown.
@@ -99,16 +99,16 @@ out <- cdmt_int(v,
                 )
 
 # Plot results
-var <- c("MSI", "TCW", "TCA")
-par(mfrow=c(length(var), 1))
+bands <- c("MSI", "TCW", "TCA")
+par(mfrow=c(length(bands), 1))
 
-for(i in seq_along(var)) {
+for(i in seq_along(bands)) {
   plot(matrix(v, nrow = 3, ncol = 36)[i,], type = "l", col = 2,
   lwd = 2, ylab = "", xlab = "", xaxt = "n")
   lines(out$est[i,], type = "l", col = 4, lwd = 2, lty = 1)
   abline(v = which(out$cpt_id == 101), lty = 2, col = 1, lwd = 2)
   axis(1, at = seq_along(1985:2020), labels = 1985:2020)
-  title(main = paste(var[i]), adj = 0)
+  title(main = paste(bands[i]), adj = 0)
 }
 
 }

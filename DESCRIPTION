@@ -7,8 +7,9 @@ Authors@R: c(
     person("Hyeyoung", "Maeng", email = "h.maeng4@lancaster.ac.uk", role = "aut"),
     person("Matteo", "Garbarino", email = "matteo.garbarino@unito.it", role = c("ctb", "fnd"), comment = c(ORCID = "0000-0002-9010-1731"))
     )
-Description: Detects changes in linear trends of inter-annual satellite time series (e.g. Landsat time series) using the High-dimensional Trend Segmentation (HiTS) procedure proposed by Maeng (2019).
-    Satellite time series can be either univariate or multivariate (i.e. including multiple spectral bands and indices).        
+Description: Implementation of the Change Detection by Multispectral Trends (CDMT) algorithm for mapping inter-annual changes in Landsat time series.
+    CDMT employs the High-dimensional Trend Segmentation (HiTS) procedure proposed by Maeng (2019) to detect changepoints at the pixel level.
+    Landsat time series can be either univariate or multivariate.        
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
