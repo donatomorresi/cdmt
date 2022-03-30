@@ -82,6 +82,8 @@ Changes in the intercept, slope or both of linear trends are detected using the 
 The HiTS procedure aims at detecting changepoints in a piecewise linear signal where their number and location are unknown.
 }
 \examples{
+library(cdmt)
+
 # Load raster data
 data(lnd_si)
 lnd_si <- terra::rast(lnd_si)

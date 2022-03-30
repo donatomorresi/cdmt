@@ -18,9 +18,9 @@ detailed description of the algorithm will be provided in an upcoming
 paper. Landsat time series can be univariate, i.e. include a single
 spectral band/index, or multivariate, i.e. include multiple spectral
 bands/indices. A modified version of the High Dimensional Trend
-Segmentation (HiTS) procedure proposed by Maeng (2019) [1] is at the
-core of CDMT. `cdmt` relies on the `terra` package for managing raster
-data and parallelise computations.
+Segmentation (HiTS) procedure proposed by Maeng (2019) is at the core of
+CDMT. `cdmt` relies on the `terra` package for managing raster data and
+parallelising computations.
 
 ## Installation
 
@@ -32,6 +32,8 @@ You can install the development version of `cdmt` from
 devtools::install_github("donato-morresi/cdmt")
 ```
 
-[1] Maeng H (2019). Adaptive multiscale approaches to regression and
-trend segmentation. Ph.D. thesis, London School of Economics and
-Political Science.
+#### References
+
+Maeng, H. (2019). Adaptive multiscale approaches to regression and trend
+segmentation. Ph.D. thesis, London School of Economics and Political
+Science.

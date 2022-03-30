@@ -59,6 +59,8 @@
 #' \insertRef{maeng2019adaptive}{cdmt}
 #'
 #' @examples
+#' library(cdmt)
+#'
 #' # Load raster data
 #' data(lnd_si)
 #' lnd_si <- terra::rast(lnd_si)

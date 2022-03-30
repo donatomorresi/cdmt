@@ -105,21 +105,21 @@ cdmt <- function(sr_data, si_data, out_path = NULL, sr = NULL, si = NULL, years,
 
   if (!is.null(sr_data)) {
 
-    if (exists(sr_data, envir = .GlobalEnv)) {  #&& inherits(sr_data, "SpatRaster")
+    if (exists(sr_data, envir = .GlobalEnv)) {
       sr_rs <- get(sr_data, envir = .GlobalEnv)
 
       if (!inherits(sr_rs, "SpatRaster")) {
-        stop("unrecognised reflectance data")
+        stop("reflectance data is not a SpatRaster object")
       }
     }
-    else if (inherits(sr_data, "connection")) {
+    else if (dir.exists(sr_data)) {
       pat <- paste0("(", paste0("_", years, collapse = "|"), ")+.+tif$")
       f <- list.files(sr_data, pat, full.names = TRUE)
       sr_rs <- lapply(f, function(x) rast(x, lyrs = sr))
       sr_rs <- do.call(c, sr_rs)
     }
     else {
-      stop("unrecognised reflectance data")
+      stop("missing reflectance data")
     }
   }
 
@@ -129,17 +129,17 @@ cdmt <- function(sr_data, si_data, out_path = NULL, sr = NULL, si = NULL, years,
       si_rs <- get(si_data, envir = .GlobalEnv)
 
       if (!inherits(si_rs, "SpatRaster")) {
-        stop("unrecognised spectral indices data")
+        stop("spectral indices data is not a SpatRaster object")
       }
     }
-    else if (inherits(si_data, "connection")) {
+    else if (dir.exists(si_data)) {
       pat <- paste0("(", paste0("_", years, collapse = "|"), ")+.+tif$")
       f <- list.files(si_data, pat, full.names = TRUE)
       si_rs <- lapply(f, function(x) rast(x, lyrs = si))
       si_rs <- do.call(c, si_rs)
     }
     else {
-      stop("unrecognised spectral indices data")
+      stop("missing spectral indices data")
     }
   }
 
