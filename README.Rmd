@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Change Detection By Multispectral Trends (CDMT)
+# Change Detection by Multispectral Trends (CDMT)
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/donato-morresi/cdmt/workflows/R-CMD-check/badge.svg)](https://github.com/donato-morresi/cdmt/actions)
@@ -29,7 +29,7 @@ A modified version of the High Dimensional Trend Segmentation (HiTS) procedure p
 
 ## Installation
 
-You can install the development version of `cdmt` from [GitHub](https://github.com/) with:
+You can install the development version of `cdmt` with:
 
 ``` r
 # install.packages("devtools")
@@ -37,6 +37,6 @@ devtools::install_github("donato-morresi/cdmt")
 ```
 
 
-#### References
+### References
 Maeng, H. (2019). Adaptive multiscale approaches to regression and trend segmentation. Ph.D. thesis, London School of Economics and Political Science.
 

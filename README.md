@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Change Detection By Multispectral Trends (CDMT)
+# Change Detection by Multispectral Trends (CDMT)
 
 <!-- badges: start -->
 
@@ -24,15 +24,14 @@ parallelising computations.
 
 ## Installation
 
-You can install the development version of `cdmt` from
-[GitHub](https://github.com/) with:
+You can install the development version of `cdmt` with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("donato-morresi/cdmt")
 ```
 
-#### References
+### References
 
 Maeng, H. (2019). Adaptive multiscale approaches to regression and trend
 segmentation. Ph.D. thesis, London School of Economics and Political
