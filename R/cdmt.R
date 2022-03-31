@@ -260,10 +260,6 @@ cdmt <- function(sr_data, si_data, out_path = NULL, sr = NULL, si = NULL, years,
   }
   else {
 
-    if (!inherits(out_path, "connection")) {
-      stop("invalid out_path")
-    }
-
     if (!dir.exists(out_path)) {
       dir.create(out_path, recursive = TRUE)
     }
