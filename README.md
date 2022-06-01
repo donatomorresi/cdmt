@@ -28,7 +28,7 @@ You can install the development version of `cdmt` with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("donato-morresi/cdmt")
+devtools::install_github("donatomorresi/cdmt")
 ```
 
 ### References
